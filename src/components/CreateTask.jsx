@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { TextField, styled, Box, Typography, Button } from '@mui/material';
 
 const Container = styled(Box)(({ theme }) => ({
@@ -20,34 +20,36 @@ const InputWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '16px',
+  justifyContent: 'space-between'
 }));
 
-const StyledTextField = styled(TextField)(({ theme }) => ({
-  flex: 1,
-  marginRight: '16px',
-  '& .MuiOutlinedInput-root': {
-    borderRadius: theme.shape.borderRadius,
-  },
-  '& .MuiInputLabel-root': {
-    color: theme.palette.text.secondary,
-  },
-}));
+const CreateTask = ({ addTask }) => {
+    const [task, setTask] = useState('');
 
-const CreateTask = () => {
+    const handleAddTask = () => {
+        if (task.trim()) {
+          addTask(task);
+          setTask('');
+        }
+      };
+    
+      const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+          handleAddTask();
+        }
+    };
+
   return (
     <Container>
       <Typography variant="h4" sx={{ mb: 2 }}>
         Task Tracker
       </Typography>
       <InputWrapper>
-        <StyledTextField
-          id="outlined-task"
-          label="Enter Task"
-          variant="outlined"
-          fullWidth
-        />
-        <Button variant="contained" color="secondary">
-          Add Task
+        <Typography variant="body1">
+          TODO APPLICATION
+        </Typography>
+        <Button variant="contained" color="secondary" onClick={handleAddTask}>
+          Create Task
         </Button>
       </InputWrapper>
     </Container>

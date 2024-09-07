@@ -1,5 +1,6 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import { Card, CardContent, Typography, styled } from '@mui/material';
+import CreateTask from './CreateTask';
 
 const CardWrapper = styled('div')({
   display: 'flex',
@@ -31,38 +32,54 @@ const BodySection = styled(CardContent)(({ theme }) => ({
 }));
 
 const CardLayout = () => {
+  const [tasks, setTasks] = useState([]);
+
+  const addTask = (task) => {
+    setTasks([...tasks, task]);
+  };
+
   return (
-    <CardWrapper>
-      <StyledCard>
-        <HeadingSection bgColor="#8A30E5"> TODO
-        </HeadingSection>
-        <BodySection>
-          <Typography variant="body1">
-            This is the body of the TODO card.
-          </Typography>
-        </BodySection>
-      </StyledCard>
+    <div>
+        <CreateTask addTask={addTask} />
 
-      <StyledCard>
-        <HeadingSection bgColor="#E26310"> INPROGRESS
-        </HeadingSection>
-        <BodySection>
-          <Typography variant="body1">
-            This is the body of the In Progress card.
-          </Typography>
-        </BodySection>
-      </StyledCard>
+        <CardWrapper>
+            <StyledCard>
+            <HeadingSection bgColor="#8A30E5"> TODO
+            </HeadingSection>
+            <BodySection>
+                {tasks.length > 0 ? (
+                    tasks.map((task, index) => (
+                    <Typography key={index} variant="body1">
+                        {task}
+                    </Typography>
+                    ))
+                ) : (
+                    <Typography variant="body1">No tasks yet.</Typography>
+                )}
+                </BodySection>
+            </StyledCard>
 
-      <StyledCard>
-        <HeadingSection bgColor="green">COMPLETED
-        </HeadingSection>
-        <BodySection>
-          <Typography variant="body1">
-            This is the body of the Completed card.
-          </Typography>
-        </BodySection>
-      </StyledCard>
-    </CardWrapper>
+            <StyledCard>
+            <HeadingSection bgColor="#E26310"> INPROGRESS
+            </HeadingSection>
+            <BodySection>
+                <Typography variant="body1">
+                This is the body of the In Progress card.
+                </Typography>
+            </BodySection>
+            </StyledCard>
+
+            <StyledCard>
+            <HeadingSection bgColor="green">COMPLETED
+            </HeadingSection>
+            <BodySection>
+                <Typography variant="body1">
+                This is the body of the Completed card.
+                </Typography>
+            </BodySection>
+            </StyledCard>
+        </CardWrapper>
+    </div>
   );
 };
 
