@@ -7,6 +7,8 @@ import EditTask from './EditTask';
 import { collection, query, onSnapshot, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig.js';
 import { format } from 'date-fns';
+import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
+
 
 const CardWrapper = styled('div')({
   display: 'flex',
@@ -21,14 +23,17 @@ const StyledCard = styled(Card)(({ theme }) => ({
   textAlign: 'center',
   display: 'flex',
   flexDirection: 'column',
+  borderRadius:  '15px',
+  fontSize: '16px',
+  fontWeight: '550',
+  lineHeight: '24px',
+  color: 'white',
+  fontFamily: 'Roboto, sans-serif',
 }));
 
 const HeadingSection = styled('div')(({ bgColor }) => ({
   backgroundColor: bgColor || 'transparent',
   padding: '1rem',
-  textAlign: 'center',
-  color: 'white',
-  fontFamily: 'Roboto, sans-serif',
 }));
 
 const BodySection = styled(CardContent)(({ theme }) => ({
@@ -38,7 +43,7 @@ const BodySection = styled(CardContent)(({ theme }) => ({
 }));
 
 const TaskCard = styled(Card)(({ theme }) => ({
-  border: '1px solid lightgrey',
+  border: '2px solid lightgrey',
   marginBottom: '8px',
   padding: '10px',
   borderRadius: '4px',
@@ -47,12 +52,22 @@ const TaskCard = styled(Card)(({ theme }) => ({
   flexDirection: 'column',
 }));
 
+const PriorityContainer = styled('div')({
+  backgroundColor: 'white',
+  marginBottom: '5px',
+});
+
 const PriorityLabel = styled(Typography)(({ priority }) => ({
   display: 'inline',
-  padding: '2px 4px',
-  borderRadius: '2px', 
-  backgroundColor: priority === 'high' ? 'rgba(255,0,0,0.1)' : priority === 'medium' ? 'rgba(255,165,0,0.1)' : 'rgba(0,128,0,0.1)',
-  color: priority === 'high' ? 'red' : priority === 'medium' ? 'orange' : 'darkgreen',
+  padding: '4px 8px',
+  borderRadius: '4px',
+  backgroundColor: priority === 'high' ? 'rgba(255,0,0,0.1)' :
+                    priority === 'medium' ? 'rgba(255,165,0,0.1)' :
+                    'rgba(0,128,0,0.1)',
+  color: priority === 'high' ? 'red' :
+         priority === 'medium' ? 'orange' :
+         'darkgreen',
+  fontSize: '12px',
 }));
 
 const TaskHeader = styled('div')({
@@ -60,6 +75,23 @@ const TaskHeader = styled('div')({
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: '8px',
+});
+
+const TitleTypography = styled(Typography)({
+  fontFamily: 'Inter, sans-serif',
+  fontSize: '18px',
+  fontWeight: '600',
+  lineHeight: '21.78px',
+  textAlign: 'left',
+  color: '#0D062D',
+});
+
+const DescriptionTypography = styled(Typography)({
+  fontFamily: 'Inter, sans-serif',
+  fontSize: '13px',
+  fontWeight: 400,
+  lineHeight: '14.52px',
+  textAlign: 'left',
 });
 
 const DividerLine = styled(Divider)(({ theme }) => ({
@@ -79,7 +111,6 @@ const CardLayout = () => {
     const fetchTasks = () => {
       const q = query(collection(db, 'tasks'));
 
-      // Attach listener
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const taskData = { todo: [], inprogress: [], completed: [] };
         querySnapshot.forEach((doc) => {
@@ -91,20 +122,18 @@ const CardLayout = () => {
         setTasks(taskData);
       });
 
-      return unsubscribe;  // Cleanup the listener on unmount
+      return unsubscribe;
     };
 
     const unsubscribe = fetchTasks();
-    return () => unsubscribe();  // Ensure cleanup of Firestore listeners
+    return () => unsubscribe();
   }, []);
 
   const addTask = async (task) => {
     try {
-      // Add task to Firestore
       const docRef = doc(collection(db, 'tasks'));
       await setDoc(docRef, task);
       
-      // Update local state
       setTasks((prevTasks) => {
         const updatedTasks = { ...prevTasks };
         updatedTasks[task.status].push({ ...task, id: docRef.id });
@@ -172,25 +201,30 @@ const CardLayout = () => {
 
                 return (
                   <TaskCard key={task.id}>
-                    <PriorityLabel priority={task.priority}>
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                    </PriorityLabel>
+                     <PriorityContainer>
+                      <PriorityLabel priority={task.priority}>
+                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                      </PriorityLabel>
+                    </PriorityContainer>
                     <TaskHeader>
-                      <Typography variant="h6" sx={{ ml: 0.1 }}>{task.title}</Typography>
+                      <TitleTypography variant="h6" sx={{ ml: 0.1 }}>{task.title}</TitleTypography>
                       <div>
                         <IconButton onClick={() => handleEditTask(task, index, 'todo')} size="small">
                           <EditIcon />
                         </IconButton>
-                        <IconButton onClick={() => deleteTask(task.id, 'todo')} size="small" sx={{ ml: -1 }}>
-                          <DeleteIcon />
+                        <IconButton onClick={() => deleteTask(task.id, 'todo')} sx={{ ml: -2 }}>
+                          <DeleteIcon sx={{ fontSize: '18px' }}/>
                         </IconButton>
                       </div>
                     </TaskHeader>
-                    <Typography variant="body2">{task.description}</Typography>
+                    <DescriptionTypography variant="body2">{task.description}</DescriptionTypography>
                     <DividerLine />
-                    <Typography variant="caption">
-                      {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
-                    </Typography>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CalendarTodayOutlinedIcon sx={{ fontSize: '15px' }} />
+                      <Typography variant="caption">
+                        {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
+                      </Typography>
+                    </div>
                   </TaskCard>
                 );
               })
@@ -210,25 +244,30 @@ const CardLayout = () => {
 
                 return (
                   <TaskCard key={task.id}>
-                    <PriorityLabel priority={task.priority}>
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                    </PriorityLabel>
+                    <PriorityContainer>
+                      <PriorityLabel priority={task.priority}>
+                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                      </PriorityLabel>
+                    </PriorityContainer>
                     <TaskHeader>
-                      <Typography variant="h6" sx={{ ml: 0.1 }}>{task.title}</Typography>
+                      <TitleTypography variant="h6" sx={{ ml: 0.1 }}>{task.title}</TitleTypography>
                       <div>
                         <IconButton onClick={() => handleEditTask(task, index, 'inprogress')} size="small">
                           <EditIcon />
                         </IconButton>
-                        <IconButton onClick={() => deleteTask(task.id, 'inprogress')} size="small" sx={{ ml: -1 }}>
-                          <DeleteIcon />
+                        <IconButton onClick={() => deleteTask(task.id, 'inprogress')} sx={{ ml: -2 }}>
+                          <DeleteIcon sx={{ fontSize: '18px' }} />
                         </IconButton>
                       </div>
                     </TaskHeader>
-                    <Typography variant="body2">{task.description}</Typography>
+                    <DescriptionTypography variant="body2">{task.description}</DescriptionTypography>
                     <DividerLine />
-                    <Typography variant="caption">
-                      {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
-                    </Typography>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CalendarTodayOutlinedIcon sx={{ fontSize: '15px' }} />
+                      <Typography variant="caption">
+                        {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
+                      </Typography>
+                    </div>
                   </TaskCard>
                 );
               })
@@ -248,25 +287,30 @@ const CardLayout = () => {
 
                 return (
                   <TaskCard key={task.id}>
-                    <PriorityLabel priority={task.priority}>
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                    </PriorityLabel>
+                     <PriorityContainer>
+                      <PriorityLabel priority={task.priority}>
+                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                      </PriorityLabel>
+                    </PriorityContainer>
                     <TaskHeader>
-                      <Typography variant="h6" sx={{ ml: 0.1 }}>{task.title}</Typography>
+                      <TitleTypography variant="h6" sx={{ ml: 0.1 }}>{task.title}</TitleTypography>
                       <div>
                         <IconButton onClick={() => handleEditTask(task, index, 'completed')} size="small">
                           <EditIcon />
                         </IconButton>
-                        <IconButton onClick={() => deleteTask(task.id, 'completed')} size="small" sx={{ ml: -1 }}>
-                          <DeleteIcon />
+                        <IconButton onClick={() => deleteTask(task.id, 'completed')} sx={{ ml: -2 }}>
+                          <DeleteIcon sx={{ fontSize: '18px' }}/>
                         </IconButton>
                       </div>
                     </TaskHeader>
-                    <Typography variant="body2">{task.description}</Typography>
+                    <DescriptionTypography variant="body2">{task.description}</DescriptionTypography>
                     <DividerLine />
-                    <Typography variant="caption">
-                      {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
-                    </Typography>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CalendarTodayOutlinedIcon sx={{ fontSize: '15px' }} />
+                      <Typography variant="caption">
+                        {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
+                      </Typography>
+                    </div>
                   </TaskCard>
                 );
               })
