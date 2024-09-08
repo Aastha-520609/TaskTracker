@@ -26,6 +26,13 @@ const InputWrapper = styled(Box)(({ theme }) => ({
 
 const CreateTask = ({ addTask }) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [taskData, setTaskData] = useState({
+      title: '',
+      description: '',
+      date: null,
+      status: 'todo', // Default to 'todo'
+      priority: 'low' // Default to 'low'
+    });
 
   const handleOpenForm = () => {
     setIsFormOpen(true);
@@ -33,6 +40,11 @@ const CreateTask = ({ addTask }) => {
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
+  };
+
+  const handleCreateTask = () => {
+    addTask(taskData);
+    handleCloseForm();
   };
 
   return (
@@ -56,16 +68,16 @@ const CreateTask = ({ addTask }) => {
       >
         <DialogTitle>Create New Task</DialogTitle>
         <DialogContent>
-          <TaskForm onClose={handleCloseForm} />
+           <TaskForm taskData={taskData} setTaskData={setTaskData} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseForm} color="secondary">
             Cancel
           </Button>
-          <Button onClick={() => { /* Handle create task */ }} variant="contained" color="secondary">
+          <Button onClick={handleCreateTask} variant="contained" color="secondary">
             Create
           </Button>
-        </DialogActions>
+        </DialogActions>*/
       </Dialog>
     </Container>
   );

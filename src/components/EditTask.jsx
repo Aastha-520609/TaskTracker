@@ -1,16 +1,19 @@
 import React from 'react';
-import { TextField, Typography, Box, FormControl, InputLabel, MenuItem, Select, styled } from '@mui/material';
+import { TextField, Typography, Box, FormControl, InputLabel, MenuItem, Select, styled, Button} from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 // Styled components
 const FormContainer = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '16px',
-  padding: '16px',
-  maxWidth: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+    padding: '16px',
+    maxWidth: '100%',
+    border: '2px solid grey',
+    borderRadius: '4px',
+    backgroundColor: '#fff',
 }));
 
 const FormSection = styled(Box)(({ theme }) => ({
@@ -28,12 +31,18 @@ const SmallTextField = styled(TextField)(({ theme }) => ({
   // Styling as needed
 }));
 
-const TaskForm = ({ taskData, setTaskData }) => {
+const EditTask = ({ task, onSave, onCancel }) => {
+  const [taskData, setTaskData] = React.useState(task);
+
   const handleChange = (field, value) => {
     setTaskData(prevState => ({
       ...prevState,
       [field]: value
     }));
+  };
+
+  const handleSave = () => {
+    onSave(taskData);
   };
 
   return (
@@ -119,8 +128,13 @@ const TaskForm = ({ taskData, setTaskData }) => {
           </Select>
         </FormControlStyled>
       </FormSection>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+        <Button variant="contained" color="primary" onClick={handleSave}>Save</Button>
+        <Button variant="outlined" color="secondary" onClick={onCancel}>Cancel</Button>
+      </Box>
     </FormContainer>
   );
 };
 
-export default TaskForm;
+export default EditTask;
