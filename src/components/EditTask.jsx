@@ -18,11 +18,13 @@ const FormContainer = styled(Box)(({ theme }) => ({
 }));
 
 const EditTask = ({ task, onSave, onCancel }) => {
+  // Initialize taskData state
   const [taskData, setTaskData] = React.useState({
     ...task,
     date: task.date ? dayjs(task.date) : null,
   });
 
+  // Handle changes in form fields
   const handleChange = (field, value) => {
     setTaskData(prevState => ({
       ...prevState,
@@ -30,11 +32,13 @@ const EditTask = ({ task, onSave, onCancel }) => {
     }));
   };
 
+  // Handle saving the task
   const handleSave = () => {
     const updatedTask = {
       ...taskData,
       date: taskData.date ? taskData.date.toDate() : null,
     };
+    // Call the onSave function to update the task
     onSave(updatedTask);
   };
 
@@ -80,7 +84,7 @@ const EditTask = ({ task, onSave, onCancel }) => {
           onChange={(e) => handleChange('status', e.target.value)}
         >
           <MenuItem value="todo">TODO</MenuItem>
-          <MenuItem value="inprogress">InProgress</MenuItem>
+          <MenuItem value="inprogress">In Progress</MenuItem>
           <MenuItem value="completed">Completed</MenuItem>
         </Select>
       </FormControl>
