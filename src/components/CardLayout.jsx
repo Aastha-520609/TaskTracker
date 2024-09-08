@@ -10,13 +10,30 @@ import { format } from 'date-fns';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 
 
-const CardWrapper = styled('div')({
+const CardWrapper = styled('div')(({ theme }) => ({
   display: 'flex',
   justifyContent: 'space-between',
   marginTop: '4rem',
   marginLeft: '15rem',
   marginRight: '15rem',
-});
+
+  [theme.breakpoints.down('lg')]: { 
+    marginLeft: '5rem',
+    marginRight: '5rem',
+  },
+
+  [theme.breakpoints.down('md')]: {
+    marginLeft: '3rem',
+    marginRight: '3rem',
+    flexDirection: 'column',
+  },
+
+  [theme.breakpoints.down('sm')]: {
+    flexDirection: 'column',        
+    marginLeft: '1rem',
+    marginRight: '1rem',
+  },
+}));
 
 const StyledCard = styled(Card)(({ theme }) => ({
   width: '30%',
@@ -29,6 +46,21 @@ const StyledCard = styled(Card)(({ theme }) => ({
   lineHeight: '24px',
   color: 'white',
   fontFamily: 'Roboto, sans-serif',
+
+  [theme.breakpoints.down('lg')]: { 
+    width: '40%',          
+    marginBottom: '2rem',   
+  },
+
+  [theme.breakpoints.down('md')]: { 
+    width: '45%',          
+    marginBottom: '2rem',   
+  },
+
+  [theme.breakpoints.down('sm')]: { 
+    width: '100%',                 
+    marginBottom: '1rem',           
+  },
 }));
 
 const HeadingSection = styled('div')(({ bgColor }) => ({

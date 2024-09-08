@@ -23,7 +23,22 @@ const InputWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '16px',
-  justifyContent: 'space-between'
+  justifyContent: 'space-between',
+
+  [theme.breakpoints.down('lg')]: { 
+    justifyContent: 'space-evenly',
+  },
+
+  [theme.breakpoints.down('md')]: { 
+    flexDirection: 'column',
+    gap: '1rem',            
+  },
+
+  [theme.breakpoints.down('sm')]: { 
+    flexDirection: 'column',       
+    alignItems: 'stretch',          
+    gap: '1rem',                    
+  },
 }));
 
 const CreateTask = ({ addTask }) => {
