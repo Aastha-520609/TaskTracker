@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, IconButton, styled, Divider } from '@mui/material';
+import { Card, CardContent, Typography, IconButton, styled, Divider, Box } from '@mui/material';
 import EditIcon from '@mui/icons-material/EditNote';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CreateTask from './CreateTask';
-import { Box } from '@mui/material';
 import EditTask from './EditTask'; 
 import { collection, query, onSnapshot, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig.js';
@@ -63,13 +62,6 @@ const TaskHeader = styled('div')({
   marginBottom: '8px',
 });
 
-const TaskContent = styled(CardContent)(({ theme }) => ({
-  padding: '8px',
-  '&:last-child': {
-    paddingBottom: '8px',
-  },
-}));
-
 const DividerLine = styled(Divider)(({ theme }) => ({
   margin: '8px 0',
 }));
@@ -78,7 +70,7 @@ const CardLayout = () => {
   const [tasks, setTasks] = useState({
     todo: [],
     inprogress: [],
-    completed: []
+    completed: [],
   });
 
   const [editTask, setEditTask] = useState(null);
@@ -86,6 +78,8 @@ const CardLayout = () => {
   useEffect(() => {
     const fetchTasks = () => {
       const q = query(collection(db, 'tasks'));
+
+      // Attach listener
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const taskData = { todo: [], inprogress: [], completed: [] };
         querySnapshot.forEach((doc) => {
@@ -96,37 +90,42 @@ const CardLayout = () => {
         });
         setTasks(taskData);
       });
-      return unsubscribe;
+
+      return unsubscribe;  // Cleanup the listener on unmount
     };
 
     const unsubscribe = fetchTasks();
-    return () => unsubscribe();
+    return () => unsubscribe();  // Ensure cleanup of Firestore listeners
   }, []);
 
-  const addTask = (task) => {
-    setTasks(prevTasks => {
-      const updatedTasks = { ...prevTasks };
-      if (task.status === 'todo') {
-        updatedTasks.todo.push(task);
-      } else if (task.status === 'inprogress') {
-        updatedTasks.inprogress.push(task);
-      } else if (task.status === 'completed') {
-        updatedTasks.completed.push(task);
-      }
-      return updatedTasks;
-    });
+  const addTask = async (task) => {
+    try {
+      // Add task to Firestore
+      const docRef = doc(collection(db, 'tasks'));
+      await setDoc(docRef, task);
+      
+      // Update local state
+      setTasks((prevTasks) => {
+        const updatedTasks = { ...prevTasks };
+        updatedTasks[task.status].push({ ...task, id: docRef.id });
+        return updatedTasks;
+      });
+    } catch (e) {
+      console.error('Error adding document: ', e);
+    }
   };
 
   const deleteTask = async (id, status) => {
     try {
       await deleteDoc(doc(db, 'tasks', id));
-      setTasks(prevTasks => {
+
+      setTasks((prevTasks) => {
         const updatedTasks = { ...prevTasks };
-        updatedTasks[status] = updatedTasks[status].filter(task => task.id !== id);
+        updatedTasks[status] = updatedTasks[status].filter((task) => task.id !== id);
         return updatedTasks;
       });
     } catch (e) {
-      console.error("Error removing document: ", e);
+      console.error('Error removing document: ', e);
     }
   };
 
@@ -137,19 +136,19 @@ const CardLayout = () => {
   const handleSaveEdit = async (updatedTask) => {
     try {
       await updateDoc(doc(db, 'tasks', editTask.task.id), updatedTask);
-      setTasks(prevTasks => {
+      setTasks((prevTasks) => {
         const updatedTasks = { ...prevTasks };
         updatedTasks[editTask.status][editTask.index] = updatedTask;
         return updatedTasks;
       });
       setEditTask(null);
     } catch (e) {
-      console.error("Error updating document: ", e);
+      console.error('Error updating document: ', e);
     }
   };
 
   const handleCancelEdit = () => {
-    setEditTask(null); 
+    setEditTask(null);
   };
 
   return (
@@ -161,7 +160,7 @@ const CardLayout = () => {
           <EditTask task={editTask.task} onSave={handleSaveEdit} onCancel={handleCancelEdit} />
         </Box>
       )}
-  
+
       <CardWrapper>
         {/* TODO Section */}
         <StyledCard>
@@ -169,16 +168,15 @@ const CardLayout = () => {
           <BodySection>
             {tasks.todo.length > 0 ? (
               tasks.todo.map((task, index) => {
-                // Convert Firestore Timestamp to JavaScript Date
                 const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
 
                 return (
-                  <TaskCard key={index}>
+                  <TaskCard key={task.id}>
                     <PriorityLabel priority={task.priority}>
                       {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                     </PriorityLabel>
                     <TaskHeader>
-                      <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
+                      <Typography variant="h6" sx={{ ml: 0.1 }}>{task.title}</Typography>
                       <div>
                         <IconButton onClick={() => handleEditTask(task, index, 'todo')} size="small">
                           <EditIcon />
@@ -188,11 +186,11 @@ const CardLayout = () => {
                         </IconButton>
                       </div>
                     </TaskHeader>
-                    <TaskContent>
-                      <Typography variant="body2">{task.description}</Typography>
-                      <DividerLine />
-                      <Typography variant="caption">{date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}</Typography>
-                    </TaskContent>
+                    <Typography variant="body2">{task.description}</Typography>
+                    <DividerLine />
+                    <Typography variant="caption">
+                      {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
+                    </Typography>
                   </TaskCard>
                 );
               })
@@ -202,22 +200,21 @@ const CardLayout = () => {
           </BodySection>
         </StyledCard>
 
-        {/* INPROGRESS Section */}
+        {/* In Progress Section */}
         <StyledCard>
-          <HeadingSection bgColor="#E26310">INPROGRESS</HeadingSection>
+          <HeadingSection bgColor="#F6C750">INPROGRESS</HeadingSection>
           <BodySection>
             {tasks.inprogress.length > 0 ? (
               tasks.inprogress.map((task, index) => {
-                // Convert Firestore Timestamp to JavaScript Date
                 const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
 
                 return (
-                  <TaskCard key={index}>
+                  <TaskCard key={task.id}>
                     <PriorityLabel priority={task.priority}>
                       {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                     </PriorityLabel>
                     <TaskHeader>
-                      <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
+                      <Typography variant="h6" sx={{ ml: 0.1 }}>{task.title}</Typography>
                       <div>
                         <IconButton onClick={() => handleEditTask(task, index, 'inprogress')} size="small">
                           <EditIcon />
@@ -227,11 +224,11 @@ const CardLayout = () => {
                         </IconButton>
                       </div>
                     </TaskHeader>
-                    <TaskContent>
-                      <Typography variant="body2">{task.description}</Typography>
-                      <DividerLine />
-                      <Typography variant="caption">{date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}</Typography>
-                    </TaskContent>
+                    <Typography variant="body2">{task.description}</Typography>
+                    <DividerLine />
+                    <Typography variant="caption">
+                      {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
+                    </Typography>
                   </TaskCard>
                 );
               })
@@ -241,22 +238,21 @@ const CardLayout = () => {
           </BodySection>
         </StyledCard>
 
-        {/* COMPLETED Section */}
+        {/* Completed Section */}
         <StyledCard>
-          <HeadingSection bgColor="#6FCF97">COMPLETED</HeadingSection>
+          <HeadingSection bgColor="#3E8E41">COMPLETED</HeadingSection>
           <BodySection>
             {tasks.completed.length > 0 ? (
               tasks.completed.map((task, index) => {
-                // Convert Firestore Timestamp to JavaScript Date
                 const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
 
                 return (
-                  <TaskCard key={index}>
+                  <TaskCard key={task.id}>
                     <PriorityLabel priority={task.priority}>
                       {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                     </PriorityLabel>
                     <TaskHeader>
-                      <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
+                      <Typography variant="h6" sx={{ ml: 0.1 }}>{task.title}</Typography>
                       <div>
                         <IconButton onClick={() => handleEditTask(task, index, 'completed')} size="small">
                           <EditIcon />
@@ -266,11 +262,11 @@ const CardLayout = () => {
                         </IconButton>
                       </div>
                     </TaskHeader>
-                    <TaskContent>
-                      <Typography variant="body2">{task.description}</Typography>
-                      <DividerLine />
-                      <Typography variant="caption">{date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}</Typography>
-                    </TaskContent>
+                    <Typography variant="body2">{task.description}</Typography>
+                    <DividerLine />
+                    <Typography variant="caption">
+                      {date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}
+                    </Typography>
                   </TaskCard>
                 );
               })

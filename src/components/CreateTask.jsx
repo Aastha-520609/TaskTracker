@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { styled, Box, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button } from '@mui/material';
 import TaskForm from './TaskForm';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
@@ -27,14 +27,14 @@ const InputWrapper = styled(Box)(({ theme }) => ({
 }));
 
 const CreateTask = ({ addTask }) => {
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [taskData, setTaskData] = useState({
-      title: '',
-      description: '',
-      date: null,
-      status: 'todo', // Default to 'todo'
-      priority: 'low' // Default to 'low'
-    });
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [taskData, setTaskData] = useState({
+    title: '',
+    description: '',
+    date: null,
+    status: 'todo',
+    priority: 'low',
+  });
 
   const handleOpenForm = () => {
     setIsFormOpen(true);
@@ -46,17 +46,23 @@ const CreateTask = ({ addTask }) => {
 
   const handleCreateTask = async () => {
     try {
-        const dataToSubmit = {
-            ...taskData,
-            date: taskData.date ? Timestamp.fromDate(new Date(taskData.date)) : null // Convert date to Firestore Timestamp
-        };
-        await addDoc(collection(db, 'tasks'), dataToSubmit);
-        addTask(dataToSubmit);
-        handleCloseForm();
+      const dataToSubmit = {
+        ...taskData,
+        date: taskData.date ? Timestamp.fromDate(new Date(taskData.date)) : null,
+      };
+
+      // Close form immediately to avoid accidental double submits
+      setIsFormOpen(false);
+
+      // Add task to Firestore
+      const docRef = await addDoc(collection(db, 'tasks'), dataToSubmit);
+
+      // Add task to local state with Firestore's generated ID
+      addTask({ ...dataToSubmit, id: docRef.id });
     } catch (e) {
-        console.error("Error adding document: ", e);
+      console.error('Error adding document: ', e);
     }
-};
+  };
 
   return (
     <Container>
@@ -64,9 +70,7 @@ const CreateTask = ({ addTask }) => {
         Task Tracker
       </Typography>
       <InputWrapper>
-        <Typography variant="body1">
-          TODO APPLICATION
-        </Typography>
+        <Typography variant="body1">TODO APPLICATION</Typography>
         <Button variant="contained" color="secondary" onClick={handleOpenForm}>
           Create Task
         </Button>
@@ -79,7 +83,7 @@ const CreateTask = ({ addTask }) => {
       >
         <DialogTitle>Create New Task</DialogTitle>
         <DialogContent>
-           <TaskForm taskData={taskData} setTaskData={setTaskData} />
+          <TaskForm taskData={taskData} setTaskData={setTaskData} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseForm} color="secondary">
@@ -95,4 +99,3 @@ const CreateTask = ({ addTask }) => {
 };
 
 export default CreateTask;
-
