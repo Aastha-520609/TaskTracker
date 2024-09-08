@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
-import { TextField, styled, Box, Typography, Button } from '@mui/material';
+import { styled, Box, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button } from '@mui/material';
+import TaskForm from './TaskForm';
 
 const Container = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -24,20 +25,15 @@ const InputWrapper = styled(Box)(({ theme }) => ({
 }));
 
 const CreateTask = ({ addTask }) => {
-    const [task, setTask] = useState('');
+    const [isFormOpen, setIsFormOpen] = useState(false);
 
-    const handleAddTask = () => {
-        if (task.trim()) {
-          addTask(task);
-          setTask('');
-        }
-      };
-    
-      const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-          handleAddTask();
-        }
-    };
+  const handleOpenForm = () => {
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+  };
 
   return (
     <Container>
@@ -48,10 +44,29 @@ const CreateTask = ({ addTask }) => {
         <Typography variant="body1">
           TODO APPLICATION
         </Typography>
-        <Button variant="contained" color="secondary" onClick={handleAddTask}>
+        <Button variant="contained" color="secondary" onClick={handleOpenForm}>
           Create Task
         </Button>
       </InputWrapper>
+      <Dialog
+        open={isFormOpen}
+        onClose={handleCloseForm}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Create New Task</DialogTitle>
+        <DialogContent>
+          <TaskForm onClose={handleCloseForm} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseForm} color="secondary">
+            Cancel
+          </Button>
+          <Button onClick={() => { /* Handle create task */ }} variant="contained" color="secondary">
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
