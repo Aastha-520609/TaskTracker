@@ -1,19 +1,20 @@
 import React from 'react';
-import { TextField, Typography, Box, FormControl, InputLabel, MenuItem, Select, styled, Button} from '@mui/material';
+import { TextField, Typography, Box, FormControl, InputLabel, MenuItem, Select, styled, Button } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 
 // Styled components
 const FormContainer = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    padding: '16px',
-    maxWidth: '100%',
-    border: '2px solid grey',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  padding: '16px',
+  maxWidth: '100%',
+  border: '2px solid grey',
+  borderRadius: '4px',
+  backgroundColor: '#fff',
 }));
 
 const FormSection = styled(Box)(({ theme }) => ({
@@ -32,17 +33,26 @@ const SmallTextField = styled(TextField)(({ theme }) => ({
 }));
 
 const EditTask = ({ task, onSave, onCancel }) => {
-  const [taskData, setTaskData] = React.useState(task);
+  // Ensure that the date is a valid dayjs object
+  const [taskData, setTaskData] = React.useState({
+    ...task,
+    date: task.date ? dayjs(task.date) : null,  // Convert to dayjs
+  });
 
   const handleChange = (field, value) => {
     setTaskData(prevState => ({
       ...prevState,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleSave = () => {
-    onSave(taskData);
+    // Convert dayjs date back to a JavaScript Date object before saving
+    const updatedTask = {
+      ...taskData,
+      date: taskData.date ? taskData.date.toDate() : null, // Convert dayjs to Date
+    };
+    onSave(updatedTask);
   };
 
   return (
@@ -79,16 +89,9 @@ const EditTask = ({ task, onSave, onCancel }) => {
         <Typography variant="subtitle1">Select Date</Typography>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
-            value={taskData.date}
+            value={taskData.date}  // Ensure taskData.date is a dayjs object
             onChange={(newDate) => handleChange('date', newDate)}
-            slotProps={{
-              textField: {
-                fullWidth: true,
-                id: "date-picker",
-                name: "date",
-                label: "Select a date",
-              }
-            }}
+            renderInput={(params) => <SmallTextField {...params} />}
           />
         </LocalizationProvider>
       </FormSection>
@@ -105,7 +108,7 @@ const EditTask = ({ task, onSave, onCancel }) => {
             onChange={(e) => handleChange('status', e.target.value)}
           >
             <MenuItem value="todo">TODO</MenuItem>
-            <MenuItem value="inprogress">InProgress</MenuItem>
+            <MenuItem value="inprogress">In Progress</MenuItem>
             <MenuItem value="completed">Completed</MenuItem>
           </Select>
         </FormControlStyled>
@@ -130,8 +133,12 @@ const EditTask = ({ task, onSave, onCancel }) => {
       </FormSection>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-        <Button variant="contained" color="primary" onClick={handleSave}>Save</Button>
-        <Button variant="outlined" color="secondary" onClick={onCancel}>Cancel</Button>
+        <Button variant="contained" color="primary" onClick={handleSave}>
+          Save
+        </Button>
+        <Button variant="outlined" color="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </Box>
     </FormContainer>
   );
