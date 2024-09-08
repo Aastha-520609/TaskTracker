@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, IconButton, styled, Divider } from '@mui/material';
 import EditIcon from '@mui/icons-material/EditNote';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CreateTask from './CreateTask';
 import { Box } from '@mui/material';
-import EditTask from './EditTask'; //
+import EditTask from './EditTask'; 
+import { collection, query, onSnapshot, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { db } from '../firebaseConfig.js';
+import { format } from 'date-fns';
 
 const CardWrapper = styled('div')({
   display: 'flex',
@@ -60,14 +63,12 @@ const TaskHeader = styled('div')({
   marginBottom: '8px',
 });
 
-
 const TaskContent = styled(CardContent)(({ theme }) => ({
   padding: '8px',
   '&:last-child': {
     paddingBottom: '8px',
   },
 }));
-
 
 const DividerLine = styled(Divider)(({ theme }) => ({
   margin: '8px 0',
@@ -81,6 +82,26 @@ const CardLayout = () => {
   });
 
   const [editTask, setEditTask] = useState(null);
+
+  useEffect(() => {
+    const fetchTasks = () => {
+      const q = query(collection(db, 'tasks'));
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const taskData = { todo: [], inprogress: [], completed: [] };
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.status) {
+            taskData[data.status].push({ ...data, id: doc.id });
+          }
+        });
+        setTasks(taskData);
+      });
+      return unsubscribe;
+    };
+
+    const unsubscribe = fetchTasks();
+    return () => unsubscribe();
+  }, []);
 
   const addTask = (task) => {
     setTasks(prevTasks => {
@@ -96,26 +117,35 @@ const CardLayout = () => {
     });
   };
 
-  const deleteTask = (index, status) => {
-    setTasks(prevTasks => {
-      const updatedTasks = { ...prevTasks };
-      updatedTasks[status].splice(index, 1);
-      return updatedTasks;
-    });
+  const deleteTask = async (id, status) => {
+    try {
+      await deleteDoc(doc(db, 'tasks', id));
+      setTasks(prevTasks => {
+        const updatedTasks = { ...prevTasks };
+        updatedTasks[status] = updatedTasks[status].filter(task => task.id !== id);
+        return updatedTasks;
+      });
+    } catch (e) {
+      console.error("Error removing document: ", e);
+    }
   };
 
   const handleEditTask = (task, index, status) => {
     setEditTask({ task, index, status });
   };
 
-  const handleSaveEdit = (updatedTask) => {
-    setTasks(prevTasks => {
-      const updatedTasks = { ...prevTasks };
-      const { task, index, status } = editTask;
-      updatedTasks[status][index] = updatedTask;
-      return updatedTasks;
-    });
-    setEditTask(null);
+  const handleSaveEdit = async (updatedTask) => {
+    try {
+      await updateDoc(doc(db, 'tasks', editTask.task.id), updatedTask);
+      setTasks(prevTasks => {
+        const updatedTasks = { ...prevTasks };
+        updatedTasks[editTask.status][editTask.index] = updatedTask;
+        return updatedTasks;
+      });
+      setEditTask(null);
+    } catch (e) {
+      console.error("Error updating document: ", e);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -133,37 +163,39 @@ const CardLayout = () => {
       )}
   
       <CardWrapper>
-
+        {/* TODO Section */}
         <StyledCard>
           <HeadingSection bgColor="#8A30E5">TODO</HeadingSection>
           <BodySection>
             {tasks.todo.length > 0 ? (
-              tasks.todo.map((task, index) => (
-                <TaskCard key={index}>
+              tasks.todo.map((task, index) => {
+                // Convert Firestore Timestamp to JavaScript Date
+                const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
+
+                return (
+                  <TaskCard key={index}>
                     <PriorityLabel priority={task.priority}>
                       {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                     </PriorityLabel>
-
-                  <TaskHeader>
-                    <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
-                    <div>
-                      <IconButton onClick={() => handleEditTask(task, index, 'todo')} size="small">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton onClick={() => deleteTask(index, 'todo')} size="small" sx={{ ml: -1 }}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </div>
-                  </TaskHeader>
-
-                  {/* Task details */}
-                  <TaskContent>
-                    <Typography variant="body2">{task.description}</Typography>
-                    <DividerLine />
-                    <Typography variant="caption">{task.date?.format('YYYY-MM-DD')}</Typography>
-                  </TaskContent>
-                </TaskCard>
-              ))
+                    <TaskHeader>
+                      <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
+                      <div>
+                        <IconButton onClick={() => handleEditTask(task, index, 'todo')} size="small">
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={() => deleteTask(task.id, 'todo')} size="small" sx={{ ml: -1 }}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </div>
+                    </TaskHeader>
+                    <TaskContent>
+                      <Typography variant="body2">{task.description}</Typography>
+                      <DividerLine />
+                      <Typography variant="caption">{date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}</Typography>
+                    </TaskContent>
+                  </TaskCard>
+                );
+              })
             ) : (
               <Typography variant="body1">No tasks yet.</Typography>
             )}
@@ -175,73 +207,78 @@ const CardLayout = () => {
           <HeadingSection bgColor="#E26310">INPROGRESS</HeadingSection>
           <BodySection>
             {tasks.inprogress.length > 0 ? (
-              tasks.inprogress.map((task, index) => (
-                <TaskCard key={index}>
-                  <PriorityLabel priority={task.priority}>
-                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                  </PriorityLabel>
+              tasks.inprogress.map((task, index) => {
+                // Convert Firestore Timestamp to JavaScript Date
+                const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
 
-                  <TaskHeader>
-                    <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
-                    <div>
-                      <IconButton onClick={() => handleEditTask(task, index, 'inprogress')} size="small">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton onClick={() => deleteTask(index, 'inprogress')} size="small" sx={{ ml: -1 }}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </div>
-                  </TaskHeader>
-
-                  {/* Task details */}
-                  <TaskContent>
-                    <Typography variant="body2">{task.description}</Typography>
-                    <DividerLine />
-                    <Typography variant="caption">{task.date?.format('YYYY-MM-DD')}</Typography>
-                  </TaskContent>
-                </TaskCard>
-              ))
+                return (
+                  <TaskCard key={index}>
+                    <PriorityLabel priority={task.priority}>
+                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                    </PriorityLabel>
+                    <TaskHeader>
+                      <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
+                      <div>
+                        <IconButton onClick={() => handleEditTask(task, index, 'inprogress')} size="small">
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={() => deleteTask(task.id, 'inprogress')} size="small" sx={{ ml: -1 }}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </div>
+                    </TaskHeader>
+                    <TaskContent>
+                      <Typography variant="body2">{task.description}</Typography>
+                      <DividerLine />
+                      <Typography variant="caption">{date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}</Typography>
+                    </TaskContent>
+                  </TaskCard>
+                );
+              })
             ) : (
               <Typography variant="body1">No tasks yet.</Typography>
             )}
           </BodySection>
         </StyledCard>
 
+        {/* COMPLETED Section */}
         <StyledCard>
-          <HeadingSection bgColor="green">COMPLETED</HeadingSection>
+          <HeadingSection bgColor="#6FCF97">COMPLETED</HeadingSection>
           <BodySection>
             {tasks.completed.length > 0 ? (
-              tasks.completed.map((task, index) => (
-                <TaskCard key={index}>
-                  <PriorityLabel priority={task.priority}>
-                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                  </PriorityLabel>
+              tasks.completed.map((task, index) => {
+                // Convert Firestore Timestamp to JavaScript Date
+                const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
 
-                  <TaskHeader>
-                    <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
-                    <div>
-                      <IconButton onClick={() => handleEditTask(task, index, 'completed')} size="small">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton onClick={() => deleteTask(index, 'completed')} size="small" sx={{ ml: -1 }}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </div>
-                  </TaskHeader>
-
-                  <TaskContent>
-                    <Typography variant="body2">{task.description}</Typography>
-                    <DividerLine />
-                    <Typography variant="caption">{task.date?.format('YYYY-MM-DD')}</Typography>
-                  </TaskContent>
-                </TaskCard>
-              ))
+                return (
+                  <TaskCard key={index}>
+                    <PriorityLabel priority={task.priority}>
+                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                    </PriorityLabel>
+                    <TaskHeader>
+                      <Typography variant="h6" sx={{ ml: 0.8 }}>{task.title}</Typography>
+                      <div>
+                        <IconButton onClick={() => handleEditTask(task, index, 'completed')} size="small">
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={() => deleteTask(task.id, 'completed')} size="small" sx={{ ml: -1 }}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </div>
+                    </TaskHeader>
+                    <TaskContent>
+                      <Typography variant="body2">{task.description}</Typography>
+                      <DividerLine />
+                      <Typography variant="caption">{date ? format(new Date(date), 'yyyy-MM-dd') : 'No date available'}</Typography>
+                    </TaskContent>
+                  </TaskCard>
+                );
+              })
             ) : (
               <Typography variant="body1">No tasks yet.</Typography>
             )}
           </BodySection>
         </StyledCard>
-
       </CardWrapper>
     </div>
   );

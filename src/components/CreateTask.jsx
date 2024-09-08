@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import { styled, Box, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button } from '@mui/material';
 import TaskForm from './TaskForm';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '../firebaseConfig.js';
 
 const Container = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -42,10 +44,19 @@ const CreateTask = ({ addTask }) => {
     setIsFormOpen(false);
   };
 
-  const handleCreateTask = () => {
-    addTask(taskData);
-    handleCloseForm();
-  };
+  const handleCreateTask = async () => {
+    try {
+        const dataToSubmit = {
+            ...taskData,
+            date: taskData.date ? Timestamp.fromDate(new Date(taskData.date)) : null // Convert date to Firestore Timestamp
+        };
+        await addDoc(collection(db, 'tasks'), dataToSubmit);
+        addTask(dataToSubmit);
+        handleCloseForm();
+    } catch (e) {
+        console.error("Error adding document: ", e);
+    }
+};
 
   return (
     <Container>
@@ -77,7 +88,7 @@ const CreateTask = ({ addTask }) => {
           <Button onClick={handleCreateTask} variant="contained" color="secondary">
             Create
           </Button>
-        </DialogActions>*/
+        </DialogActions>
       </Dialog>
     </Container>
   );
