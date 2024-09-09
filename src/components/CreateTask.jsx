@@ -47,12 +47,20 @@ const CreateTask = ({ addTask }) => {
     title: '',
     description: '',
     date: null,
-    status: 'todo',
-    priority: 'low',
+    status: '',
+    priority: '',
   });
 
   const handleOpenForm = () => {
-    setIsFormOpen(true);
+    // Reset taskData when opening the form
+    setTaskData({
+      title: '',
+      description: '',
+      date: null,
+      status: '',
+      priority: '',
+    });
+    setIsFormOpen(true); // Open the form
   };
 
   const handleCloseForm = () => {
