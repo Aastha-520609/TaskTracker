@@ -221,16 +221,28 @@ const CardLayout = () => {
   const handleSaveEdit = async (updatedTask) => {
     try {
       await updateDoc(doc(db, 'tasks', editTask.task.id), updatedTask);
+  
       setTasks((prevTasks) => {
         const updatedTasks = { ...prevTasks };
-        updatedTasks[editTask.status][editTask.index] = updatedTask;
+  
+        updatedTasks[editTask.status] = updatedTasks[editTask.status].filter(
+          (task) => task.id !== editTask.task.id
+        );
+  
+        if (!updatedTasks[updatedTask.status].some(task => task.id === updatedTask.id)) {
+          updatedTasks[updatedTask.status] = [...updatedTasks[updatedTask.status], updatedTask];
+        }
+  
         return updatedTasks;
       });
+  
       setEditTask(null);
     } catch (e) {
       console.error('Error updating document: ', e);
     }
   };
+  
+  
 
   const handleCancelEdit = () => {
     setEditTask(null);
