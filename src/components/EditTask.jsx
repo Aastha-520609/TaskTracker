@@ -19,7 +19,7 @@ const FormContainer = styled(Box)(({ theme }) => ({
 const EditTask = ({ task, onSave, onCancel }) => {
   const [taskData, setTaskData] = React.useState({
     ...task,
-    date: task.date ? dayjs(task.date) : null,
+    date: task.date ? dayjs(task.date.toDate ? task.date.toDate() : task.date) : null,
   });
 
   const handleChange = (field, value) => {
