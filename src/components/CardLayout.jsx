@@ -3,12 +3,11 @@ import { Card, CardContent, Typography, IconButton, styled, Divider, Box } from 
 import EditIcon from '@mui/icons-material/EditNote';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CreateTask from './CreateTask';
-import EditTask from './EditTask'; 
+import EditTask from './EditTask';
 import { collection, query, onSnapshot, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig.js';
 import { format } from 'date-fns';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
-
 
 const CardWrapper = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -137,6 +136,7 @@ const CardLayout = () => {
     completed: [],
   });
 
+  const [draggedTask, setDraggedTask] = useState(null);
   const [editTask, setEditTask] = useState(null);
 
   useEffect(() => {
@@ -161,20 +161,44 @@ const CardLayout = () => {
     return () => unsubscribe();
   }, []);
 
-  const addTask = async (task) => {
-    try {
-      const docRef = doc(collection(db, 'tasks'));
-      await setDoc(docRef, task);
-      
-      setTasks((prevTasks) => {
-        const updatedTasks = { ...prevTasks };
-        updatedTasks[task.status].push({ ...task, id: docRef.id });
-        return updatedTasks;
-      });
-    } catch (e) {
-      console.error('Error adding document: ', e);
+  const handleDragStart = (task, status) => {
+    setDraggedTask({ task, status });
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+  };
+
+  const handleDrop = async (newStatus, event) => {
+    event.preventDefault();
+  
+    if (draggedTask && draggedTask.status !== newStatus) {
+      try {
+        const updatedTask = { ...draggedTask.task, status: newStatus };
+  
+        await updateDoc(doc(db, 'tasks', draggedTask.task.id), updatedTask);
+  
+        setTasks((prevTasks) => {
+          const updatedTasks = { ...prevTasks };
+  
+          if (updatedTasks[draggedTask.status].some((task) => task.id === draggedTask.task.id)) {
+            updatedTasks[draggedTask.status] = updatedTasks[draggedTask.status].filter(
+              (task) => task.id !== draggedTask.task.id
+            );
+  
+            updatedTasks[newStatus] = [...updatedTasks[newStatus], updatedTask];
+          }
+  
+          return updatedTasks; 
+        });
+  
+        setDraggedTask(null);
+      } catch (e) {
+        console.error('Error updating task status: ', e);
+      }
     }
   };
+  
 
   const deleteTask = async (id, status) => {
     try {
@@ -214,7 +238,7 @@ const CardLayout = () => {
 
   return (
     <div>
-      <CreateTask addTask={addTask} />
+      <CreateTask />
 
       {editTask && (
         <Box sx={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
@@ -224,7 +248,10 @@ const CardLayout = () => {
 
       <CardWrapper>
         {/* TODO Section */}
-        <StyledCard>
+        <StyledCard
+          onDragOver={handleDragOver}
+          onDrop={(event) => handleDrop('todo', event)} // Pass event to onDrop
+        >
           <HeadingSection bgColor="#8A30E5">TODO</HeadingSection>
           <BodySection>
             {tasks.todo.length > 0 ? (
@@ -232,8 +259,12 @@ const CardLayout = () => {
                 const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
 
                 return (
-                  <TaskCard key={task.id}>
-                     <PriorityContainer>
+                  <TaskCard
+                    key={task.id}
+                    draggable
+                    onDragStart={() => handleDragStart(task, 'todo')}
+                  >
+                    <PriorityContainer>
                       <PriorityLabel priority={task.priority}>
                         {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                       </PriorityLabel>
@@ -266,16 +297,22 @@ const CardLayout = () => {
           </BodySection>
         </StyledCard>
 
-        {/* In Progress Section */}
-        <StyledCard>
-          <HeadingSection bgColor="#F6C750">INPROGRESS</HeadingSection>
+        <StyledCard
+          onDragOver={handleDragOver}
+          onDrop={(event) => handleDrop('inprogress', event)}
+        >
+          <HeadingSection bgColor="#F6C750">IN PROGRESS</HeadingSection>
           <BodySection>
             {tasks.inprogress.length > 0 ? (
               tasks.inprogress.map((task, index) => {
                 const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
 
                 return (
-                  <TaskCard key={task.id}>
+                  <TaskCard
+                    key={task.id}
+                    draggable
+                    onDragStart={() => handleDragStart(task, 'inprogress')}
+                  >
                     <PriorityContainer>
                       <PriorityLabel priority={task.priority}>
                         {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
@@ -310,7 +347,10 @@ const CardLayout = () => {
         </StyledCard>
 
         {/* Completed Section */}
-        <StyledCard>
+        <StyledCard
+          onDragOver={handleDragOver}
+          onDrop={(event) => handleDrop('completed', event)} // Pass event to onDrop
+        >
           <HeadingSection bgColor="#3E8E41">COMPLETED</HeadingSection>
           <BodySection>
             {tasks.completed.length > 0 ? (
@@ -318,8 +358,12 @@ const CardLayout = () => {
                 const date = task.date instanceof Timestamp ? task.date.toDate() : task.date;
 
                 return (
-                  <TaskCard key={task.id}>
-                     <PriorityContainer>
+                  <TaskCard
+                    key={task.id}
+                    draggable
+                    onDragStart={() => handleDragStart(task, 'completed')}
+                  >
+                    <PriorityContainer>
                       <PriorityLabel priority={task.priority}>
                         {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                       </PriorityLabel>

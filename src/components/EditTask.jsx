@@ -5,7 +5,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 
-// Styled components
 const FormContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
@@ -18,13 +17,11 @@ const FormContainer = styled(Box)(({ theme }) => ({
 }));
 
 const EditTask = ({ task, onSave, onCancel }) => {
-  // Initialize taskData state
   const [taskData, setTaskData] = React.useState({
     ...task,
     date: task.date ? dayjs(task.date) : null,
   });
 
-  // Handle changes in form fields
   const handleChange = (field, value) => {
     setTaskData(prevState => ({
       ...prevState,
@@ -32,13 +29,11 @@ const EditTask = ({ task, onSave, onCancel }) => {
     }));
   };
 
-  // Handle saving the task
   const handleSave = () => {
     const updatedTask = {
       ...taskData,
       date: taskData.date ? taskData.date.toDate() : null,
     };
-    // Call the onSave function to update the task
     onSave(updatedTask);
   };
 

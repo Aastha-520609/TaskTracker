@@ -7,7 +7,7 @@ A responsive Task Tracker web application built with React, Firebase, and Materi
 #Delete Task: Remove tasks you no longer need.
 #Priority Labels: Each task is tagged with a priority level (Low, Medium, High).
 #Responsive Design: Optimized for screens of all sizes, including mobile (480x844), tablet, and desktop.
-#Remaining Task: Implement drag-and-drop functionality to move tasks between "TODO", "In Progress", and "Completed" sections.
+#Drag and Drop: Implemented drag-and-drop functionality to move tasks between "TODO", "In Progress", and "Completed" sections.
 
 ##Technologies Used
 #React: For building the user interface.

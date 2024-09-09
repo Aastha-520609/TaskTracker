@@ -66,13 +66,10 @@ const CreateTask = ({ addTask }) => {
         date: taskData.date ? Timestamp.fromDate(new Date(taskData.date)) : null,
       };
 
-      // Close form immediately to avoid accidental double submits
       setIsFormOpen(false);
 
-      // Add task to Firestore
       const docRef = await addDoc(collection(db, 'tasks'), dataToSubmit);
 
-      // Add task to local state with Firestore's generated ID
       addTask({ ...dataToSubmit, id: docRef.id });
     } catch (e) {
       console.error('Error adding document: ', e);
