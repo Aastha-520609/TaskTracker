@@ -52,7 +52,6 @@ const CreateTask = ({ addTask }) => {
   });
 
   const handleOpenForm = () => {
-    // Reset taskData when opening the form
     setTaskData({
       title: '',
       description: '',
@@ -60,7 +59,7 @@ const CreateTask = ({ addTask }) => {
       status: '',
       priority: '',
     });
-    setIsFormOpen(true); // Open the form
+    setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
